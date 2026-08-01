@@ -1,0 +1,203 @@
+<script setup lang="ts">
+import {message} from "@/utils/message";
+import {onMounted, reactive, ref} from "vue";
+import {getMine, updateMine, uploadAvatar, type UserInfo} from "@/api/user";
+import type {FormInstance, FormRules} from "element-plus";
+import ReCropperPreview from "@/components/ReCropperPreview";
+import {deviceDetection, storageLocal} from "@pureadmin/utils";
+import {useUserStoreHook} from "@/store/modules/user";
+import {userKey} from "@/utils/auth";
+import uploadLine from "~icons/ri/upload-line";
+
+defineOptions({
+  name: "Profile"
+});
+
+const imgSrc = ref("");
+const cropperBlob = ref();
+const cropRef = ref();
+const uploadRef = ref();
+const isShow = ref(false);
+const userInfoFormRef = ref<FormInstance>();
+
+const userInfos = reactive({
+  avatar: "",
+  nickname: "",
+  email: "",
+  phone: "",
+  description: ""
+});
+
+const rules = reactive<FormRules<UserInfo>>({
+  nickname: [{required: true, message: "昵称必填", trigger: "blur"}],
+  email: [{type: "email", message: "邮箱格式不正确", trigger: "blur"}]
+});
+
+function queryEmail(queryString, callback) {
+  const emailList = [
+    {value: "@qq.com"},
+    {value: "@126.com"},
+    {value: "@163.com"}
+  ];
+  let results = [];
+  let queryList = [];
+  emailList.map(item =>
+      queryList.push({value: queryString.split("@")[0] + item.value})
+  );
+  results = queryString
+      ? queryList.filter(
+          item =>
+              item.value.toLowerCase().indexOf(queryString.toLowerCase()) === 0
+      )
+      : queryList;
+  callback(results);
+}
+
+const onChange = uploadFile => {
+  const reader = new FileReader();
+  reader.onload = e => {
+    imgSrc.value = e.target.result as string;
+    isShow.value = true;
+  };
+  reader.readAsDataURL(uploadFile.raw);
+};
+
+const handleClose = () => {
+  cropRef.value.hidePopover();
+  uploadRef.value.clearFiles();
+  isShow.value = false;
+};
+
+const onCropper = ({blob}) => (cropperBlob.value = blob);
+
+// 更新信息
+const onSubmit = async (formEl: FormInstance) => {
+  await formEl.validate(async valid => {
+    if (!valid) return;
+    await updateMine({
+      realName: userInfos.nickname,
+      email: userInfos.email,
+      phone: userInfos.phone,
+      avatar: userInfos.avatar
+    });
+    // 同步昵称到顶栏（store + localStorage），刷新页面后仍保持
+    syncUserCache({nickname: userInfos.nickname});
+    message("更新信息成功", {type: "success"});
+  });
+};
+
+/** 同步头像/昵称到全局 store 与 localStorage，使顶栏立即刷新且刷新页面后不回退 */
+function syncUserCache(patch: { avatar?: string; nickname?: string }) {
+  if (patch.avatar !== undefined) useUserStoreHook().SET_AVATAR(patch.avatar);
+  if (patch.nickname !== undefined)
+    useUserStoreHook().SET_NICKNAME(patch.nickname);
+  const cached = storageLocal().getItem<Record<string, any>>(userKey);
+  if (cached) storageLocal().setItem(userKey, {...cached, ...patch});
+}
+
+const handleSubmitImage = async () => {
+  try {
+    const data = await uploadAvatar(
+        new File([cropperBlob.value], "avatar.png", {type: "image/png"})
+    );
+    userInfos.avatar = data.avatar;
+    syncUserCache({avatar: data.avatar});
+    message("更新头像成功", {type: "success"});
+    handleClose();
+  } catch (error) {
+    message(`提交异常 ${error?.message || error}`, {type: "error"});
+  }
+};
+
+onMounted(async () => {
+  const data = await getMine();
+  if (data) {
+    userInfos.avatar = data.avatar ?? "";
+    userInfos.nickname = data.realName ?? "";
+    userInfos.email = data.email ?? "";
+    userInfos.phone = data.phone ?? "";
+  }
+});
+</script>
+
+<template>
+  <div :class="['min-w-45', deviceDetection() ? 'max-w-full' : 'max-w-[70%]']">
+    <h3 class="my-8!">个人信息</h3>
+    <el-form
+        ref="userInfoFormRef"
+        label-position="top"
+        :rules="rules"
+        :model="userInfos"
+    >
+      <el-form-item label="头像">
+        <el-avatar :size="80" :src="userInfos.avatar"/>
+        <el-upload
+            ref="uploadRef"
+            accept="image/*"
+            action="#"
+            :limit="1"
+            :auto-upload="false"
+            :show-file-list="false"
+            :on-change="onChange"
+        >
+          <el-button plain class="ml-4!">
+            <IconifyIconOffline :icon="uploadLine"/>
+            <span class="ml-2">更新头像</span>
+          </el-button>
+        </el-upload>
+      </el-form-item>
+      <el-form-item label="昵称" prop="nickname">
+        <el-input v-model="userInfos.nickname" placeholder="请输入昵称"/>
+      </el-form-item>
+      <el-form-item label="邮箱" prop="email">
+        <el-autocomplete
+            v-model="userInfos.email"
+            :fetch-suggestions="queryEmail"
+            :trigger-on-focus="false"
+            placeholder="请输入邮箱"
+            clearable
+            class="w-full"
+        />
+      </el-form-item>
+      <el-form-item label="联系电话">
+        <el-input
+            v-model="userInfos.phone"
+            placeholder="请输入联系电话"
+            clearable
+        />
+      </el-form-item>
+      <el-form-item label="简介">
+        <el-input
+            v-model="userInfos.description"
+            placeholder="请输入简介"
+            type="textarea"
+            :autosize="{ minRows: 6, maxRows: 8 }"
+            maxlength="56"
+            show-word-limit
+        />
+      </el-form-item>
+      <el-button type="primary" @click="onSubmit(userInfoFormRef)">
+        更新信息
+      </el-button>
+    </el-form>
+    <el-dialog
+        v-model="isShow"
+        width="40%"
+        title="编辑头像"
+        destroy-on-close
+        :closeOnClickModal="false"
+        :before-close="handleClose"
+        :fullscreen="deviceDetection()"
+    >
+      <ReCropperPreview ref="cropRef" :imgSrc="imgSrc" @cropper="onCropper"/>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button bg text @click="handleClose">取消</el-button>
+          <el-button bg text type="primary" @click="handleSubmitImage">
+            确定
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+  </div>
+</template>
