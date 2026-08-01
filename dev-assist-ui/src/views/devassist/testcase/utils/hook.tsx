@@ -17,7 +17,8 @@ import {
 } from "@/api/devassist/testcase";
 
 const PRIORITY_MAP = {LOW: "低", MEDIUM: "中", HIGH: "高"};
-const PRIORITY_TYPE: Partial<Record<string, "info" | "warning">> = {
+type TagType = "primary" | "success" | "info" | "warning" | "danger";
+const PRIORITY_TYPE: Record<string, TagType> = {
     LOW: "info",
     HIGH: "warning"
 };
@@ -29,12 +30,15 @@ const RESULT_MAP: any = {
     BLOCKED: "阻塞",
     SKIPPED: "跳过"
 };
-const RESULT_TYPE: Partial<Record<string, "success" | "danger" | "warning" | "info">> = {
+const RESULT_TYPE: Record<string, TagType> = {
     PASSED: "success",
     FAILED: "danger",
     BLOCKED: "warning",
     SKIPPED: "info"
 };
+/** 带兜底的 tag 类型取值：未知 key 回退到 "info"，保证类型恒在合法联合内 */
+const tagTypeOf = (map: Record<string, TagType>, key: string): TagType =>
+    map[key] || "info";
 
 export function useTestCase() {
     const form = reactive({
@@ -76,7 +80,7 @@ export function useTestCase() {
             prop: "priority",
             width: 80,
             cellRenderer: ({row}) => (
-                <el-tag effect="plain" type={PRIORITY_TYPE[row.priority]}>
+                <el-tag effect="plain" type={tagTypeOf(PRIORITY_TYPE, row.priority)}>
                     {PRIORITY_MAP[row.priority] || row.priority}
                 </el-tag>
             )
@@ -86,7 +90,7 @@ export function useTestCase() {
             prop: "lastResult",
             width: 100,
             cellRenderer: ({row}) => (
-                <el-tag effect="plain" type={RESULT_TYPE[row.lastResult] || "info"}>
+                <el-tag effect="plain" type={tagTypeOf(RESULT_TYPE, row.lastResult)}>
                     {RESULT_MAP[row.lastResult] || "未执行"}
                 </el-tag>
             )
