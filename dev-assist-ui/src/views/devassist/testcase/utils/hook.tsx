@@ -74,7 +74,16 @@ export function useTestCase() {
 
     const columns: TableColumnList = [
         {label: "ID", prop: "id", width: 70},
-        {label: "用例标题", prop: "title", minWidth: 200},
+        {
+            label: "用例标题",
+            prop: "title",
+            minWidth: 200,
+            cellRenderer: ({row}) => (
+                <el-link type="primary" underline="never" onClick={() => openDetail(row)}>
+                    {row.title}
+                </el-link>
+            )
+        },
         {
             label: "优先级",
             prop: "priority",
