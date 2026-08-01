@@ -8,11 +8,13 @@
         <version>4.1.0</version>
         <relativePath/>
     </parent>
+
     <groupId>com.sudies</groupId>
     <artifactId>dev-assist</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.2</version>
     <name>dev-assist</name>
     <description>dev-assist</description>
+
     <url/>
 
     <licenses>
