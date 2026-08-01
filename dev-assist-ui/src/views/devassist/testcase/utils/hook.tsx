@@ -80,8 +80,6 @@ export function useTestCase() {
             prop: "priority",
             width: 80,
             cellRenderer: ({row}) => (
-                // IDEA 对表达式形式的 type 误报"非有效值"（vue-tsc 已验证类型正确），忽略
-                // @ts-ignore
                 <el-tag effect="plain" type={tagTypeOf(PRIORITY_TYPE, row.priority)}>
                     {PRIORITY_MAP[row.priority] || row.priority}
                 </el-tag>
@@ -92,8 +90,6 @@ export function useTestCase() {
             prop: "lastResult",
             width: 100,
             cellRenderer: ({row}) => (
-                // IDEA 对表达式形式的 type 误报"非有效值"（vue-tsc 已验证类型正确），忽略
-                // @ts-ignore
                 <el-tag effect="plain" type={tagTypeOf(RESULT_TYPE, row.lastResult)}>
                     {RESULT_MAP[row.lastResult] || "未执行"}
                 </el-tag>

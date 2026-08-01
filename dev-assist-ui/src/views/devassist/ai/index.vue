@@ -394,7 +394,7 @@ onMounted(async () => {
                   :class="{ active: selectedIdx.has(i) }"
                   @click="toggleItem(i)"
               >
-                <el-checkbox :model-value="selectedIdx.has(i)" class="!mr-2"/>
+                <el-checkbox :model-value="selectedIdx.has(i)" class="mr-2!"/>
                 <div class="flex-1">
                   <div class="flex items-center gap-2 mb-1 flex-wrap">
                     <el-tag size="small" effect="plain">
