@@ -80,6 +80,8 @@ export function useTestCase() {
             prop: "priority",
             width: 80,
             cellRenderer: ({row}) => (
+                // IDEA 对表达式形式的 type 误报"非有效值"（vue-tsc 已验证类型正确），忽略
+                // @ts-ignore
                 <el-tag effect="plain" type={tagTypeOf(PRIORITY_TYPE, row.priority)}>
                     {PRIORITY_MAP[row.priority] || row.priority}
                 </el-tag>
@@ -90,6 +92,8 @@ export function useTestCase() {
             prop: "lastResult",
             width: 100,
             cellRenderer: ({row}) => (
+                // IDEA 对表达式形式的 type 误报"非有效值"（vue-tsc 已验证类型正确），忽略
+                // @ts-ignore
                 <el-tag effect="plain" type={tagTypeOf(RESULT_TYPE, row.lastResult)}>
                     {RESULT_MAP[row.lastResult] || "未执行"}
                 </el-tag>
@@ -122,7 +126,7 @@ export function useTestCase() {
     const resetForm = el => {
         if (!el) return;
         el.resetFields();
-        onSearch();
+        void onSearch();
     };
 
     function openDialog(title = "新增", row?: any) {
@@ -158,7 +162,7 @@ export function useTestCase() {
                         message("修改成功", {type: "success"});
                     }
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -192,7 +196,7 @@ export function useTestCase() {
                         message("执行已记录", {type: "success"});
                     }
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -217,17 +221,17 @@ export function useTestCase() {
     async function handleDelete(row) {
         await deleteTestCase(row.id);
         message("删除成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleSizeChange(val: number) {
         form.pageSize = val;
-        onSearch();
+        void onSearch();
     }
 
     function handleCurrentChange(val: number) {
         form.page = val;
-        onSearch();
+        void onSearch();
     }
 
     onMounted(async () => {
@@ -243,7 +247,7 @@ export function useTestCase() {
             id: x.id,
             name: x.name
         }));
-        onSearch();
+        void onSearch();
     });
 
     return {

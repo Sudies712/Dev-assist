@@ -94,7 +94,7 @@ export function useProject() {
     const resetForm = el => {
         if (!el) return;
         el.resetFields();
-        onSearch();
+        void onSearch();
     };
 
     function openDialog(title = "新增", row?: any) {
@@ -125,7 +125,7 @@ export function useProject() {
                         message("修改成功", {type: "success"});
                     }
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -135,17 +135,17 @@ export function useProject() {
     async function handleAction(row: any, target: string) {
         await changeProjectStatus(row.id, target);
         message("操作成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleSizeChange(val: number) {
         form.pageSize = val;
-        onSearch();
+        void onSearch();
     }
 
     function handleCurrentChange(val: number) {
         form.page = val;
-        onSearch();
+        void onSearch();
     }
 
     function openDetail(row: any) {

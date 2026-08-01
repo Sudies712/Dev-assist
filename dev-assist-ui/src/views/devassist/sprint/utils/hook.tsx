@@ -80,7 +80,7 @@ export function useSprint() {
     const resetForm = el => {
         if (!el) return;
         el.resetFields();
-        onSearch();
+        void onSearch();
     };
 
     function openDialog(title = "新增", row?: any) {
@@ -113,7 +113,7 @@ export function useSprint() {
                         message("修改成功", {type: "success"});
                     }
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -123,7 +123,7 @@ export function useSprint() {
     async function handleAction(row: any, target: string) {
         await changeSprintStatus(row.id, target);
         message("操作成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleBurndown(row) {
@@ -139,17 +139,17 @@ export function useSprint() {
     async function handleDelete(row) {
         await deleteSprint(row.id);
         message("删除成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleSizeChange(val: number) {
         form.pageSize = val;
-        onSearch();
+        void onSearch();
     }
 
     function handleCurrentChange(val: number) {
         form.page = val;
-        onSearch();
+        void onSearch();
     }
 
     onMounted(async () => {
@@ -158,7 +158,7 @@ export function useSprint() {
             id: x.id,
             name: x.name
         }));
-        onSearch();
+        void onSearch();
     });
 
     return {

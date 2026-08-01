@@ -9,7 +9,7 @@ const props = withDefaults(
         title: string;
         type: string;
         priority: string;
-        estimatedEffort: number | string;
+        estimatedEffort: number;
         description: string;
         projectOptions: Array<{ id: number; name: string }>;
       };
@@ -20,7 +20,7 @@ const props = withDefaults(
         title: "",
         type: "FUNCTIONAL",
         priority: "MEDIUM",
-        estimatedEffort: "",
+        estimatedEffort: 0,
         description: "",
         projectOptions: []
       })

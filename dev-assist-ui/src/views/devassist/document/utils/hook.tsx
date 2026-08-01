@@ -138,7 +138,7 @@ export function useDocument() {
     const resetForm = el => {
         if (!el) return;
         el.resetFields();
-        onSearch();
+        void onSearch();
     };
 
     function openUpload() {
@@ -169,7 +169,7 @@ export function useDocument() {
                     await uploadDocument(cur.file, cur.projectId, cur.type, cur.description);
                     message("上传成功，正在异步解析", {type: "success"});
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -196,7 +196,7 @@ export function useDocument() {
                     await updateDocument(cur.id, cur);
                     message("修改成功", {type: "success"});
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -226,7 +226,7 @@ export function useDocument() {
     async function handleReparse(row) {
         await reparseDocument(row.id);
         message("已触发重新解析", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleDownload(row) {
@@ -236,17 +236,17 @@ export function useDocument() {
     async function handleDelete(row) {
         await deleteDocument(row.id);
         message("删除成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleSizeChange(val: number) {
         form.pageSize = val;
-        onSearch();
+        void onSearch();
     }
 
     function handleCurrentChange(val: number) {
         form.page = val;
-        onSearch();
+        void onSearch();
     }
 
     onMounted(async () => {
@@ -255,7 +255,7 @@ export function useDocument() {
             id: x.id,
             name: x.name
         }));
-        onSearch();
+        void onSearch();
     });
 
     onBeforeUnmount(() => {

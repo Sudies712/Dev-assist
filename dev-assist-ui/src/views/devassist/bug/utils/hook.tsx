@@ -131,7 +131,7 @@ export function useBug() {
     const resetForm = el => {
         if (!el) return;
         el.resetFields();
-        onSearch();
+        void onSearch();
     };
 
     function openDialog(title = "新增", row?: any) {
@@ -167,7 +167,7 @@ export function useBug() {
                         message("修改成功", {type: "success"});
                     }
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -202,7 +202,7 @@ export function useBug() {
                     });
                     message("状态变更成功", {type: "success"});
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -237,7 +237,7 @@ export function useBug() {
                     );
                     message("分配成功", {type: "success"});
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -263,17 +263,17 @@ export function useBug() {
     async function handleDelete(row) {
         await deleteBug(row.id);
         message("删除成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleSizeChange(val: number) {
         form.pageSize = val;
-        onSearch();
+        void onSearch();
     }
 
     function handleCurrentChange(val: number) {
         form.page = val;
-        onSearch();
+        void onSearch();
     }
 
     onMounted(async () => {
@@ -289,7 +289,7 @@ export function useBug() {
             id: x.id,
             name: x.name
         }));
-        onSearch();
+        void onSearch();
     });
 
     return {

@@ -362,19 +362,18 @@ public class TestCaseService {
     /**
      * 编辑/删除：仅创建人或项目负责人。
      */
-    private TestCase mustGetEditable(Long id) {
+    private void mustGetEditable(Long id) {
         TestCase tc = mustGetCaseAsMember(id);
         if (SecurityUtils.hasRole(RoleCode.ADMIN.name())) {
             throw new BizException(ResultCode.FORBIDDEN, "管理员不参与项目业务");
         }
         if (SecurityUtils.hasRole(RoleCode.OWNER.name())) {
-            return tc;
+            return;
         }
         Long uid = SecurityUtils.currentUserId();
         if (!uid.equals(tc.getCreatorId())) {
             throw new BizException(ResultCode.FORBIDDEN, "仅创建人或项目负责人可操作");
         }
-        return tc;
     }
 
     private void ensureMember(Long projectId) {
