@@ -53,9 +53,6 @@ const RESULT_TYPE: any = {
               ? dayjs(caseData.lastExecuteTime).format("YYYY-MM-DD HH:mm") : "-"
         }}
       </el-descriptions-item>
-      <el-descriptions-item label="实际结果" :span="2">
-        {{ caseData.lastActualResult || "-" }}
-      </el-descriptions-item>
       <el-descriptions-item label="前置条件" :span="2">
         {{ caseData.preconditions || "-" }}
       </el-descriptions-item>

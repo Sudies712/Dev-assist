@@ -17,7 +17,10 @@ import {
 } from "@/api/devassist/testcase";
 
 const PRIORITY_MAP = {LOW: "低", MEDIUM: "中", HIGH: "高"};
-const PRIORITY_TYPE: any = {LOW: "info", HIGH: "warning"};
+const PRIORITY_TYPE: Partial<Record<string, "info" | "warning">> = {
+    LOW: "info",
+    HIGH: "warning"
+};
 
 /** 执行结果映射（列表 tag 与执行按钮共用配色） */
 const RESULT_MAP: any = {
@@ -26,7 +29,7 @@ const RESULT_MAP: any = {
     BLOCKED: "阻塞",
     SKIPPED: "跳过"
 };
-const RESULT_TYPE: any = {
+const RESULT_TYPE: Partial<Record<string, "success" | "danger" | "warning" | "info">> = {
     PASSED: "success",
     FAILED: "danger",
     BLOCKED: "warning",
@@ -197,14 +200,13 @@ export function useTestCase() {
             props: {
                 formInline: {caseId: row.id, caseTitle: row.title}
             },
-            width: "60%",
+            width: "74%",
+            // 纯展示弹窗：无表单提交，隐藏底部按钮，仅保留右上角关闭
+            hideFooter: true,
             draggable: true,
             closeOnClickModal: false,
             contentRenderer: () =>
-                h(historyForm, {ref: historyFormRef, formInline: null}),
-            beforeSure: done => {
-                done();
-            }
+                h(historyForm, {ref: historyFormRef, formInline: null})
         });
     }
 

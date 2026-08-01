@@ -20,6 +20,26 @@ public class TestExecution implements Serializable {
     private Long testCaseId;
 
     /**
+     * 用例名称快照（执行时复制，历史反映当时用例内容）
+     */
+    private String title;
+
+    /**
+     * 前置条件快照
+     */
+    private String preconditions;
+
+    /**
+     * 测试步骤快照
+     */
+    private String steps;
+
+    /**
+     * 预期结果快照
+     */
+    private String expectedResult;
+
+    /**
      * 执行人（不可空）
      */
     private Long executorId;
@@ -35,6 +55,11 @@ public class TestExecution implements Serializable {
      * UNEXECUTED/PASSED/FAILED/BLOCKED/SKIPPED
      */
     private String result;
+
+    /**
+     * 联动缺陷 id（空=未转缺陷）
+     */
+    private Long bugId;
 
     private LocalDateTime executeTime;
 
