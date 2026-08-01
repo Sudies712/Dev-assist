@@ -1,7 +1,7 @@
-# Da平台 · Dev-assist
+# Dev-assist
 
 软件项目开发辅助管理平台：**Scrum 项目管理 + LangChain4j AI 辅助**。
-面向软件研发团队，覆盖项目、需求、迭代、任务、缺陷、测试、文档全流程管理，并集成知识库问答与 AI 助手。
+面向中小型软件研发团队，覆盖项目、需求、迭代、任务、缺陷、测试、文档全流程管理，并集成知识库问答与 AI 助手。
 前端基于 vue-pure-admin v7 二次开发，后端基于 Spring Boot 4.1 提供 REST 服务，AI 能力由 DeepSeek + RAG 知识库支撑。
 
 ## 技术栈
@@ -12,6 +12,42 @@
 | AI/向量 | DeepSeek（LLM）· bge-small-zh-v1.5（本地 embedding）· Qdrant（向量库，RAG）                                            |
 | 前端    | Vue 3.5 + vue-pure-admin v7（Element Plus / Pinia / ECharts）· Vite 8                                        |
 | 存储    | MySQL（Docker）· Redis（Docker，会话与 Token）                                                                     |
+
+## 环境要求
+
+JDK 17、Maven 3.9.11、MySQL、Redis、Qdrant
+
+## 环境变量
+
+| 变量                 | 用途                             | 说明                                                    |
+|--------------------|--------------------------------|-------------------------------------------------------|
+| `DEEPSEEK_API_KEY` | DeepSeek LLM 调用密钥（AI 助手/知识库问答） | **必填**（AI 功能依赖），未设置时 AI 类接口将报错。环境变量名：DEEPSEEK_API_KEY |
+
+## 部署
+
+1.保证环境要求与环境变量配置完毕
+
+2.使用`/sql/schema.sql`初始化数据库表
+
+3.检查SpringBoot的yaml配置
+
+4.启动
+
+## 启动
+
+```bash
+mvn -B -ntp compile      # 编译
+mvn spring-boot:run      # 启动
+
+# Redis,需另外会话启动
+redis-server
+
+# 前端（80，浏览器访问 http://localhost，需另外会话启动）
+cd dev-assist-ui && npm run dev
+```
+
+- Swagger 文档：http://localhost:8080/swagger-ui.html
+- AI 功能启动前需配置密钥，见下方「环境变量」
 
 ## 功能模块
 
@@ -27,39 +63,6 @@
 - **仪表盘**：项目下拉 + 6 统计卡 + 5 张 ECharts 图表
 - **系统管理**（ADMIN 专属）：用户 CRUD/状态/重置密码/分配角色，角色与权限管理
 
-## 环境要求
-
-| 依赖           | 说明                                                                |
-|--------------|-------------------------------------------------------------------|
-| JDK 17       | 后端运行                                                              |
-| Maven 3.9.11 | 后端构建（localRepository 已配置于 settings.xml）                           |
-| Docker       | 三件套容器：`mysql`(:3306, root/123456)、`redis`(:6379, 123456)、`qdrant` |
-| Node.js ≥ 22 | 前端构建（Vite 8，engines 要求 node ≥ 22.22.1）                            |
-
-## 启动
-
-```bash
-# 后端（8080）
-export JAVA_HOME="/c/Others/Environments/Java/jdk-17"
-export PATH="/c/Others/Environments/Apache/apache-maven-3.9.11/bin:$JAVA_HOME/bin:$PATH"
-mvn -B -ntp compile      # 编译
-mvn spring-boot:run      # 启动
-
-# 前端（80，浏览器访问 http://localhost）
-cd dev-assist-ui && npm run dev
-```
-
-- Swagger 文档：http://localhost:8080/swagger-ui.html
-- AI 功能启动前需配置密钥，见下方「环境变量」
-
-## 环境变量
-
-| 变量                 | 用途                             | 说明                                                                                   |
-|--------------------|--------------------------------|--------------------------------------------------------------------------------------|
-| `DEEPSEEK_API_KEY` | DeepSeek LLM 调用密钥（AI 助手/知识库问答） | **必填**（AI 功能依赖），本地启动前在 shell 中导出，例如：`export DEEPSEEK_API_KEY=sk-xxxx`；未设置时 AI 类接口将报错 |
-
-> 密钥不进仓库：`application.yaml` 中 `deepseek.api-key` 仅声明 `${DEEPSEEK_API_KEY:}`，由环境变量注入。
-
 ## 测试账号（密码统一 admin123）
 
 | 账号      | 角色            |
@@ -68,16 +71,6 @@ cd dev-assist-ui && npm run dev
 | owner1  | 项目负责人         |
 | dev1    | 开发人员          |
 | tester1 | 测试人员          |
-
-## 文档
-
-| 文档                    | 内容                                    |
-|-----------------------|---------------------------------------|
-| `doc/01-需求分析文档.md`    | 需求规格（V2.1）：用户角色、业务流程、功能需求、权限矩阵、接口清单   |
-| `doc/02-概要设计文档.md`    | 概要设计（V1.1）：总体架构、后端/AI/前端架构、数据库概要、安全设计 |
-| `doc/03-接口字段契约.md`    | 接口字段契约：请求/响应字段定义                      |
-| `doc/04-关键流程详细设计.md`  | 关键流程：认证授权与数据隔离、状态机、AI 草稿二次确认、RAG 管道   |
-| `doc/05-开发技术要点与踩坑.md` | 技术栈适配要点、架构决策细则、前端踩坑                   |
 
 ## 目录结构
 
@@ -88,15 +81,7 @@ dev-assist/
 │   ├── config/           # Sa-Token / Cors / MyBatisPlus / LangChain4j 等
 │   └── resources/prompt/ # AI Prompt
 ├── dev-assist-ui/        # 前端（vue-pure-admin）
-├── doc/                  # 设计文档（需求/概要/接口/流程/技术要点）
 ├── sql/schema.sql        # 建表脚本（23 表 + 初始数据）
-├── uploads/              # 附件/文档存储（运行时数据，不入库）
 └── pom.xml
 ```
 
-## 版本历史
-
-| 版本    | 内容                                                                                          |
-|-------|---------------------------------------------------------------------------------------------|
-| 1.1.1 | 认证免登录与 401 无感刷新、账户设置接通（个人信息/改密码/头像）、状态流转 UI 统一、测试用例执行状态与详情、系统配置管理员专属、需求排期 API 修复、前端端口调整至 80 |
-| 1.0.0 | 地基 + 全部业务模块 + AI 能力 + 前端全链路对接，端到端验证通过                                                       |
