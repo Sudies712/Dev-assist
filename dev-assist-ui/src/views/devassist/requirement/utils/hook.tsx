@@ -108,7 +108,7 @@ export function useRequirement() {
     const resetForm = el => {
         if (!el) return;
         el.resetFields();
-        onSearch();
+        void onSearch();
     };
 
     function openDialog() {
@@ -120,7 +120,7 @@ export function useRequirement() {
                     title: "",
                     type: "FUNCTIONAL",
                     priority: "MEDIUM",
-                    estimatedEffort: "",
+                    estimatedEffort: 0,
                     description: "",
                     projectOptions: projectOptions.value
                 }
@@ -138,12 +138,12 @@ export function useRequirement() {
                         title: cur.title,
                         type: cur.type,
                         priority: cur.priority,
-                        estimatedEffort: cur.estimatedEffort || null,
+                        estimatedEffort: cur.estimatedEffort ?? null,
                         description: cur.description
                     });
                     message("新增成功", {type: "success"});
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -169,7 +169,7 @@ export function useRequirement() {
                     });
                     message("评审完成", {type: "success"});
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -197,7 +197,7 @@ export function useRequirement() {
                     await scheduleRequirement(row.id, cur.sprintId);
                     message("排期成功", {type: "success"});
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -206,23 +206,23 @@ export function useRequirement() {
     async function handleDelete(row) {
         await deleteRequirement(row.id);
         message("删除成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleSizeChange(val: number) {
         form.pageSize = val;
-        onSearch();
+        void onSearch();
     }
 
     function handleCurrentChange(val: number) {
         form.page = val;
-        onSearch();
+        void onSearch();
     }
 
     onMounted(async () => {
         const p: any = await getProjectList({pageSize: 100});
         projectOptions.value = (p?.list || []).map((x: any) => ({id: x.id, name: x.name}));
-        onSearch();
+        void onSearch();
     });
 
     return {

@@ -68,7 +68,7 @@ const projectOptions = ref<any[]>([]);
 const assistantType = ref("task-breakdown");
 const contextId = ref<string | number>("");
 /** 任务草稿归属迭代（confirm 落 task 表时后端必填，前端建草稿时注入） */
-const draftSprintId = ref<string | number>("");
+const draftSprintId = ref<number | undefined>(undefined);
 
 const requirements = ref<any[]>([]);
 const bugs = ref<any[]>([]);
@@ -117,7 +117,7 @@ async function loadContextOptions() {
   bugs.value = (bug?.list || []).map((x: any) => ({id: x.id, name: x.title}));
   sprints.value = (spr?.list || []).map((x: any) => ({id: x.id, name: x.name}));
   // 任务草稿默认归属第一个迭代
-  draftSprintId.value = sprints.value.length ? sprints.value[0].id : "";
+  draftSprintId.value = sprints.value.length ? Number(sprints.value[0].id) : undefined;
 }
 
 async function loadRecords() {
@@ -125,14 +125,14 @@ async function loadRecords() {
   records.value = (await listAiRecords(projectId.value)) || [];
 }
 
-function onProjectChange() {
+async function onProjectChange() {
   aiResult.value = null;
   contextId.value = "";
   records.value = [];
   drafts.value = [];
   selectedRecordId.value = null;
-  loadContextOptions();
-  loadRecords();
+  await loadContextOptions();
+  await loadRecords();
 }
 
 function onAssistantChange() {
@@ -190,7 +190,7 @@ async function handleCreateDrafts() {
         ...it,
         sprintId:
             it.targetModule === "TASK" ? draftSprintId.value || undefined : it.sprintId
-      }));
+      })) as DraftItem[];
   if (!items.length) {
     message("请至少勾选一条建议", {type: "warning"});
     return;
@@ -394,7 +394,7 @@ onMounted(async () => {
                   :class="{ active: selectedIdx.has(i) }"
                   @click="toggleItem(i)"
               >
-                <el-checkbox :model-value="selectedIdx.has(i)" class="!mr-2"/>
+                <el-checkbox :model-value="selectedIdx.has(i)" class="mr-2!"/>
                 <div class="flex-1">
                   <div class="flex items-center gap-2 mb-1 flex-wrap">
                     <el-tag size="small" effect="plain">

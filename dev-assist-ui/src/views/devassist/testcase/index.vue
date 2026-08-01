@@ -32,7 +32,6 @@ const {
   handleCurrentChange,
   detailVisible,
   detailCase,
-  openDetail,
   RESULT_TYPE
 } = useTestCase();
 </script>
@@ -141,15 +140,6 @@ const {
             @page-current-change="handleCurrentChange"
         >
           <template #operation="{ row }">
-            <el-button
-                class="reset-margin"
-                link
-                type="primary"
-                :size="size"
-                @click="openDetail(row)"
-            >
-              详情
-            </el-button>
             <el-button
                 class="reset-margin"
                 link

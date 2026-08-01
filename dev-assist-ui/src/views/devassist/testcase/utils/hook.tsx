@@ -17,7 +17,11 @@ import {
 } from "@/api/devassist/testcase";
 
 const PRIORITY_MAP = {LOW: "低", MEDIUM: "中", HIGH: "高"};
-const PRIORITY_TYPE: any = {LOW: "info", HIGH: "warning"};
+type TagType = "primary" | "success" | "info" | "warning" | "danger";
+const PRIORITY_TYPE: Record<string, TagType> = {
+    LOW: "info",
+    HIGH: "warning"
+};
 
 /** 执行结果映射（列表 tag 与执行按钮共用配色） */
 const RESULT_MAP: any = {
@@ -26,12 +30,15 @@ const RESULT_MAP: any = {
     BLOCKED: "阻塞",
     SKIPPED: "跳过"
 };
-const RESULT_TYPE: any = {
+const RESULT_TYPE: Record<string, TagType> = {
     PASSED: "success",
     FAILED: "danger",
     BLOCKED: "warning",
     SKIPPED: "info"
 };
+/** 带兜底的 tag 类型取值：未知 key 回退到 "info"，保证类型恒在合法联合内 */
+const tagTypeOf = (map: Record<string, TagType>, key: string): TagType =>
+    map[key] || "info";
 
 export function useTestCase() {
     const form = reactive({
@@ -67,13 +74,22 @@ export function useTestCase() {
 
     const columns: TableColumnList = [
         {label: "ID", prop: "id", width: 70},
-        {label: "用例标题", prop: "title", minWidth: 200},
+        {
+            label: "用例标题",
+            prop: "title",
+            minWidth: 200,
+            cellRenderer: ({row}) => (
+                <el-link type="primary" underline="never" onClick={() => openDetail(row)}>
+                    {row.title}
+                </el-link>
+            )
+        },
         {
             label: "优先级",
             prop: "priority",
             width: 80,
             cellRenderer: ({row}) => (
-                <el-tag effect="plain" type={PRIORITY_TYPE[row.priority]}>
+                <el-tag effect="plain" type={tagTypeOf(PRIORITY_TYPE, row.priority)}>
                     {PRIORITY_MAP[row.priority] || row.priority}
                 </el-tag>
             )
@@ -83,7 +99,7 @@ export function useTestCase() {
             prop: "lastResult",
             width: 100,
             cellRenderer: ({row}) => (
-                <el-tag effect="plain" type={RESULT_TYPE[row.lastResult] || "info"}>
+                <el-tag effect="plain" type={tagTypeOf(RESULT_TYPE, row.lastResult)}>
                     {RESULT_MAP[row.lastResult] || "未执行"}
                 </el-tag>
             )
@@ -115,7 +131,7 @@ export function useTestCase() {
     const resetForm = el => {
         if (!el) return;
         el.resetFields();
-        onSearch();
+        void onSearch();
     };
 
     function openDialog(title = "新增", row?: any) {
@@ -151,7 +167,7 @@ export function useTestCase() {
                         message("修改成功", {type: "success"});
                     }
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -185,7 +201,7 @@ export function useTestCase() {
                         message("执行已记录", {type: "success"});
                     }
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -197,31 +213,30 @@ export function useTestCase() {
             props: {
                 formInline: {caseId: row.id, caseTitle: row.title}
             },
-            width: "60%",
+            width: "74%",
+            // 纯展示弹窗：无表单提交，隐藏底部按钮，仅保留右上角关闭
+            hideFooter: true,
             draggable: true,
             closeOnClickModal: false,
             contentRenderer: () =>
-                h(historyForm, {ref: historyFormRef, formInline: null}),
-            beforeSure: done => {
-                done();
-            }
+                h(historyForm, {ref: historyFormRef, formInline: null})
         });
     }
 
     async function handleDelete(row) {
         await deleteTestCase(row.id);
         message("删除成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleSizeChange(val: number) {
         form.pageSize = val;
-        onSearch();
+        void onSearch();
     }
 
     function handleCurrentChange(val: number) {
         form.page = val;
-        onSearch();
+        void onSearch();
     }
 
     onMounted(async () => {
@@ -237,7 +252,7 @@ export function useTestCase() {
             id: x.id,
             name: x.name
         }));
-        onSearch();
+        void onSearch();
     });
 
     return {

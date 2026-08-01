@@ -374,18 +374,24 @@ CREATE TABLE `test_case` (
 
 DROP TABLE IF EXISTS `test_execution`;
 CREATE TABLE `test_execution` (
-  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `test_case_id` BIGINT UNSIGNED NOT NULL,
-  `executor_id`  BIGINT UNSIGNED NOT NULL,
-  `sprint_id`    BIGINT UNSIGNED NULL,
+  `id`            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `test_case_id`  BIGINT UNSIGNED NOT NULL,
+  `title`         VARCHAR(255) NULL COMMENT '用例名称快照（执行时复制）',
+  `preconditions` TEXT NULL COMMENT '前置条件快照',
+  `steps`         TEXT NULL COMMENT '测试步骤快照',
+  `expected_result` TEXT NULL COMMENT '预期结果快照',
+  `executor_id`   BIGINT UNSIGNED NOT NULL,
+  `sprint_id`     BIGINT UNSIGNED NULL,
   `actual_result` TEXT NULL COMMENT '实际结果',
-  `result`       VARCHAR(16)  NOT NULL COMMENT 'UNEXECUTED/PASSED/FAILED/BLOCKED/SKIPPED',
-  `execute_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `create_by`    BIGINT UNSIGNED NULL,
-  `create_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `result`        VARCHAR(16)  NOT NULL COMMENT 'UNEXECUTED/PASSED/FAILED/BLOCKED/SKIPPED',
+  `bug_id`        BIGINT UNSIGNED NULL COMMENT '联动缺陷 id（空=未转缺陷）',
+  `execute_time`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `create_by`     BIGINT UNSIGNED NULL,
+  `create_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_exec_case` (`test_case_id`),
-  KEY `idx_exec_sprint` (`sprint_id`)
+  KEY `idx_exec_sprint` (`sprint_id`),
+  KEY `idx_exec_bug` (`bug_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='测试执行记录';
 
 -- ============================================================
@@ -635,3 +641,16 @@ SELECT 4, `id` FROM `permission` WHERE `perm_code` IN (
   'testcase:create','testcase:read','testcase:update','testcase:delete','testcase:execute',
   'document:read','kb:ask',
   'ai:test_case_generation','ai:bug_analysis');
+
+-- ============================================================
+-- 数据修复：test_execution 快照列 backfill（执行历史增强）
+-- 旧执行记录（迁移前）以当前用例内容补齐快照列；
+-- bug_id 无法 backfill（旧联动 Bug 不归并到具体执行记录）
+-- ============================================================
+UPDATE `test_execution` te
+LEFT JOIN `test_case` tc ON tc.`id` = te.`test_case_id`
+SET te.`title`          = COALESCE(te.`title`, tc.`title`),
+    te.`preconditions`  = COALESCE(te.`preconditions`, tc.`preconditions`),
+    te.`steps`          = COALESCE(te.`steps`, tc.`steps`),
+    te.`expected_result`= COALESCE(te.`expected_result`, tc.`expected_result`)
+WHERE te.`title` IS NULL;
