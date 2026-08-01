@@ -103,7 +103,7 @@ export function useTask() {
     const resetForm = el => {
         if (!el) return;
         el.resetFields();
-        onSearch();
+        void onSearch();
     };
 
     function openDialog(title = "新增", row?: any) {
@@ -138,7 +138,7 @@ export function useTask() {
                         message("修改成功", {type: "success"});
                     }
                     done();
-                    onSearch();
+                    void onSearch();
                 });
             }
         });
@@ -151,7 +151,7 @@ export function useTask() {
     async function handleAction(row: any, targetStatus: string, reason?: string) {
         await changeTaskStatus(row.id, {targetStatus, reason});
         message("状态变更成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     /** 退回（须填原因）：IN_PROGRESS→TODO 后端强校验；READY_FOR_TEST→IN_PROGRESS 原因写入评论 */
@@ -171,17 +171,17 @@ export function useTask() {
     async function handleDelete(row) {
         await deleteTask(row.id);
         message("删除成功", {type: "success"});
-        onSearch();
+        void onSearch();
     }
 
     function handleSizeChange(val: number) {
         form.pageSize = val;
-        onSearch();
+        void onSearch();
     }
 
     function handleCurrentChange(val: number) {
         form.page = val;
-        onSearch();
+        void onSearch();
     }
 
     onMounted(async () => {
@@ -197,7 +197,7 @@ export function useTask() {
             id: x.id,
             name: x.name
         }));
-        onSearch();
+        void onSearch();
     });
 
     return {

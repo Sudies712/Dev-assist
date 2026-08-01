@@ -23,11 +23,6 @@ const loading = ref(false);
 const addVisible = ref(false);
 const addForm = ref({userId: "" as number | string, projectRole: "DEVELOPER"});
 
-const ROLE_MAP: any = {
-  OWNER: "项目负责人",
-  DEVELOPER: "开发人员",
-  TESTER: "测试人员"
-};
 const ROLE_OPTS = [
   {label: "项目负责人", value: "OWNER"},
   {label: "开发人员", value: "DEVELOPER"},
@@ -69,8 +64,13 @@ async function loadData() {
     ]);
     project.value = p;
     statistics.value = stat;
-    const loadMap = new Map((load || []).map((x: any) => [x.userId, x]));
-    members.value = (mem || []).map((m: any) => ({...m, ...loadMap.get(m.userId)}));
+    const loadMap = new Map<number, any>(
+        (load || []).map((x: any) => [x.userId, x] as [number, any])
+    );
+    members.value = (mem || []).map((m: any) => ({
+      ...m,
+      ...(loadMap.get(m.userId) || {})
+    }));
   } finally {
     loading.value = false;
   }
@@ -98,7 +98,7 @@ async function submitAdd() {
   });
   message("添加成功", {type: "success"});
   addVisible.value = false;
-  loadData();
+  await loadData();
 }
 
 async function handleRoleChange(m: any, role: string) {
@@ -119,7 +119,7 @@ async function handleRemove(m: any) {
   }
   await removeProjectMember(props.projectId as number, m.userId);
   message("已移除", {type: "success"});
-  loadData();
+  await loadData();
 }
 
 watch(

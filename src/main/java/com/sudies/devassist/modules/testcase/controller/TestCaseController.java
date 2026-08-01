@@ -77,4 +77,11 @@ public class TestCaseController {
     public Result<List<TestExecutionVO>> listExecutions(@PathVariable Long id) {
         return Result.success(testCaseService.listExecutions(id));
     }
+
+    @Operation(summary = "执行历史转缺陷（FAILED 记录，幂等返回已有缺陷）")
+    @SaCheckPermission("testcase:execute")
+    @PostMapping("/executions/{executionId}/convert-bug")
+    public Result<ExecuteResultVO> convertToBug(@PathVariable Long executionId) {
+        return Result.success(testCaseService.convertToBug(executionId));
+    }
 }

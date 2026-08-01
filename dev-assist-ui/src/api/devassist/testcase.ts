@@ -34,3 +34,13 @@ export const executeTestCase = (id: number, data: object) =>
 /** 用例执行历史（按执行时间倒序） */
 export const listExecutions = (id: number) =>
     http.request<any[]>("get", `/test-cases/${id}/executions`);
+
+/**
+ * 执行历史转缺陷（FAILED 记录，幂等：已有 bug_id 返回原缺陷）
+ * 返回 { executionId, bugId }
+ */
+export const convertExecutionToBug = (executionId: number) =>
+    http.request<{ executionId: number; bugId: number | null }>(
+        "post",
+        `/test-cases/executions/${executionId}/convert-bug`
+    );

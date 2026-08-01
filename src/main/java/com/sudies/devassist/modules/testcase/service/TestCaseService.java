@@ -195,7 +195,7 @@ public class TestCaseService {
     }
 
     public void update(Long id, UpdateTestCaseDTO dto) {
-        TestCase tc = mustGetEditable(id);
+        mustGetEditable(id);
         TestCase upd = new TestCase();
         upd.setId(id);
         if (StringUtils.hasText(dto.getTitle())) {
@@ -217,7 +217,7 @@ public class TestCaseService {
     }
 
     public void delete(Long id) {
-        TestCase tc = mustGetEditable(id);
+        mustGetEditable(id);
         caseMapper.deleteById(id);
     }
 
@@ -230,6 +230,11 @@ public class TestCaseService {
 
         TestExecution exec = new TestExecution();
         exec.setTestCaseId(caseId);
+        // 执行时快照：复制用例内容，历史记录反映"当时"的用例（用例后续修改不影响已执行记录）
+        exec.setTitle(tc.getTitle());
+        exec.setPreconditions(tc.getPreconditions());
+        exec.setSteps(tc.getSteps());
+        exec.setExpectedResult(tc.getExpectedResult());
         exec.setExecutorId(SecurityUtils.currentUserId());
         exec.setSprintId(dto.getSprintId() != null ? dto.getSprintId() : tc.getSprintId());
         exec.setActualResult(dto.getActualResult());
@@ -259,8 +264,64 @@ public class TestCaseService {
             bugDto.setStepsToReproduce(tc.getSteps());
             bugDto.setSeverity(BugSeverity.MAJOR.name());
             bugDto.setPriority(StringUtils.hasText(tc.getPriority()) ? tc.getPriority() : TestCasePriority.MEDIUM.name());
-            vo.setBugId(bugService.create(bugDto));
+            Long bugId = bugService.create(bugDto);
+            // 写回执行记录的缺陷关联，历史中可直接展示
+            exec.setBugId(bugId);
+            executionMapper.updateById(exec);
+            vo.setBugId(bugId);
         }
+        return vo;
+    }
+
+    /**
+     * 执行历史转缺陷：仅 FAILED 记录；幂等（已有 bug_id 直接返回，不重复建）。
+     * 快照为 NULL 的旧记录（迁移前数据）回退到 test_case 当前值。
+     */
+    @Transactional
+    public ExecuteResultVO convertToBug(Long executionId) {
+        TestExecution exec = executionMapper.selectById(executionId);
+        if (exec == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "执行记录不存在");
+        }
+        if (!TestExecutionResult.FAILED.name().equals(exec.getResult())) {
+            throw new BizException(ResultCode.BAD_REQUEST, "仅失败记录可转缺陷");
+        }
+        TestCase tc = caseMapper.selectById(exec.getTestCaseId());
+        if (tc == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "关联用例不存在或已删除");
+        }
+        ensureMember(tc.getProjectId());
+
+        CreateBugDTO bugDto = new CreateBugDTO();
+        bugDto.setProjectId(tc.getProjectId());
+        bugDto.setSprintId(exec.getSprintId() != null ? exec.getSprintId() : tc.getSprintId());
+        bugDto.setRequirementId(tc.getRequirementId());
+        bugDto.setTestCaseId(exec.getTestCaseId());
+        bugDto.setTitle("【用例失败】" + (StringUtils.hasText(exec.getTitle()) ? exec.getTitle() : tc.getTitle()));
+        StringBuilder desc = new StringBuilder("测试用例「")
+                .append(StringUtils.hasText(exec.getTitle()) ? exec.getTitle() : tc.getTitle())
+                .append("」执行失败");
+        if (StringUtils.hasText(exec.getActualResult())) {
+            desc.append("，实际结果：").append(exec.getActualResult());
+        }
+        String expected = StringUtils.hasText(exec.getExpectedResult()) ? exec.getExpectedResult() : tc.getExpectedResult();
+        if (StringUtils.hasText(expected)) {
+            desc.append("；预期：").append(expected);
+        }
+        bugDto.setDescription(desc.toString());
+        bugDto.setStepsToReproduce(StringUtils.hasText(exec.getSteps()) ? exec.getSteps() : tc.getSteps());
+        bugDto.setSeverity(BugSeverity.MAJOR.name());
+        bugDto.setPriority(StringUtils.hasText(tc.getPriority()) ? tc.getPriority() : TestCasePriority.MEDIUM.name());
+
+        Long bugId = bugService.create(bugDto);
+        TestExecution upd = new TestExecution();
+        upd.setId(executionId);
+        upd.setBugId(bugId);
+        executionMapper.updateById(upd);
+
+        ExecuteResultVO vo = new ExecuteResultVO();
+        vo.setExecutionId(executionId);
+        vo.setBugId(bugId);
         return vo;
     }
 
@@ -301,19 +362,18 @@ public class TestCaseService {
     /**
      * 编辑/删除：仅创建人或项目负责人。
      */
-    private TestCase mustGetEditable(Long id) {
+    private void mustGetEditable(Long id) {
         TestCase tc = mustGetCaseAsMember(id);
         if (SecurityUtils.hasRole(RoleCode.ADMIN.name())) {
             throw new BizException(ResultCode.FORBIDDEN, "管理员不参与项目业务");
         }
         if (SecurityUtils.hasRole(RoleCode.OWNER.name())) {
-            return tc;
+            return;
         }
         Long uid = SecurityUtils.currentUserId();
         if (!uid.equals(tc.getCreatorId())) {
             throw new BizException(ResultCode.FORBIDDEN, "仅创建人或项目负责人可操作");
         }
-        return tc;
     }
 
     private void ensureMember(Long projectId) {
