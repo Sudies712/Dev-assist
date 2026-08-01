@@ -188,6 +188,13 @@ public class ProjectService {
     }
 
     public void addMember(Long projectId, AddMemberDTO dto) {
+        // 角色枚举校验（沿用 changeStatus 的 valueOf 模式）
+        ProjectRole role;
+        try {
+            role = ProjectRole.valueOf(dto.getProjectRole());
+        } catch (IllegalArgumentException e) {
+            throw new BizException(ResultCode.BAD_REQUEST, "未知的项目角色: " + dto.getProjectRole());
+        }
         Long userCnt = userMapper.selectCount(
                 Wrappers.<User>lambdaQuery().eq(User::getId, dto.getUserId()));
         if (userCnt == null || userCnt == 0L) {
@@ -203,14 +210,25 @@ public class ProjectService {
         ProjectMember m = new ProjectMember();
         m.setProjectId(projectId);
         m.setUserId(dto.getUserId());
-        m.setProjectRole(dto.getProjectRole());
+        m.setProjectRole(role.name());
         projectMemberMapper.insert(m);
     }
 
     /**
-     * 移除成员。校验该成员在该项目下无未完成任务（SRS §5.2.2）。
+     * 移除成员。校验该成员在该项目下无未完成任务（SRS §5.2.2），
+     * 且不能移除项目最后一名负责人（否则项目无主）。
      */
     public void removeMember(Long projectId, Long userId) {
+        ProjectMember m = projectMemberMapper.selectOne(Wrappers.<ProjectMember>lambdaQuery()
+                .eq(ProjectMember::getProjectId, projectId)
+                .eq(ProjectMember::getUserId, userId));
+        if (m == null) {
+            throw new BizException(ResultCode.NOT_FOUND, "该用户不是项目成员");
+        }
+        if (ProjectRole.OWNER.name().equals(m.getProjectRole()) && countOwners(projectId) <= 1L) {
+            throw new BizException(ResultCode.BAD_REQUEST,
+                    "项目至少需保留 1 名项目负责人，无法移除最后一名负责人");
+        }
         long undone = taskService.countUndoneTasks(projectId, userId);
         if (undone > 0) {
             throw new BizException(ResultCode.BAD_REQUEST,
@@ -243,16 +261,40 @@ public class ProjectService {
     }
 
     /**
+     * 项目负责人数量。MyBatis-Plus selectCount 可能返回 null，统一判空为 0。
+     */
+    private long countOwners(Long projectId) {
+        Long cnt = projectMemberMapper.selectCount(Wrappers.<ProjectMember>lambdaQuery()
+                .eq(ProjectMember::getProjectId, projectId)
+                .eq(ProjectMember::getProjectRole, ProjectRole.OWNER.name()));
+        return cnt == null ? 0L : cnt;
+    }
+
+    /**
      * 修改成员项目角色（SRS §5.2.2 设置成员角色）。
+     * 项目最后一名负责人不能被降级（否则项目无主）。
      */
     public void changeMemberRole(Long projectId, Long userId, String projectRole) {
+        ProjectRole role;
+        try {
+            role = ProjectRole.valueOf(projectRole);
+        } catch (IllegalArgumentException e) {
+            throw new BizException(ResultCode.BAD_REQUEST, "未知的项目角色: " + projectRole);
+        }
         ProjectMember m = projectMemberMapper.selectOne(Wrappers.<ProjectMember>lambdaQuery()
                 .eq(ProjectMember::getProjectId, projectId)
                 .eq(ProjectMember::getUserId, userId));
         if (m == null) {
             throw new BizException(ResultCode.NOT_FOUND, "该用户不是项目成员");
         }
-        m.setProjectRole(projectRole);
+        // 最后一名负责人不能被降级（提升为负责人不受限）
+        if (role != ProjectRole.OWNER
+                && ProjectRole.OWNER.name().equals(m.getProjectRole())
+                && countOwners(projectId) <= 1L) {
+            throw new BizException(ResultCode.BAD_REQUEST,
+                    "项目至少需保留 1 名项目负责人，无法将最后一名负责人降为其他角色");
+        }
+        m.setProjectRole(role.name());
         projectMemberMapper.updateById(m);
     }
 }

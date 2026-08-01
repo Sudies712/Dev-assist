@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref, watch} from "vue";
+import {computed, ref, watch} from "vue";
 import {message} from "@/utils/message";
 import {
   addProjectMember,
@@ -33,6 +33,15 @@ const ROLE_OPTS = [
   {label: "开发人员", value: "DEVELOPER"},
   {label: "测试人员", value: "TESTER"}
 ];
+/** 项目负责人数量（行内禁用/拦截共用） */
+const ownerCount = computed(
+    () => members.value.filter((m: any) => m.projectRole === "OWNER").length
+);
+
+/** 该成员是否为项目最后一名负责人 */
+function isLastOwner(m: any): boolean {
+  return m.projectRole === "OWNER" && ownerCount.value <= 1;
+}
 const STATUS_MAP: any = {
   NOT_STARTED: "未开始",
   IN_PROGRESS: "进行中",
@@ -94,12 +103,20 @@ async function submitAdd() {
 
 async function handleRoleChange(m: any, role: string) {
   if (role === m.projectRole) return;
+  if (isLastOwner(m)) {
+    message("项目至少需保留 1 名项目负责人，无法降级", {type: "warning"});
+    return;
+  }
   await changeMemberRole(props.projectId as number, m.userId, role);
   message("角色已更新", {type: "success"});
   m.projectRole = role;
 }
 
 async function handleRemove(m: any) {
+  if (isLastOwner(m)) {
+    message("项目至少需保留 1 名项目负责人，无法移除", {type: "warning"});
+    return;
+  }
   await removeProjectMember(props.projectId as number, m.userId);
   message("已移除", {type: "success"});
   loadData();
@@ -186,6 +203,7 @@ watch(
             <el-select
                 :model-value="row.projectRole"
                 size="small"
+                :disabled="isLastOwner(row)"
                 @change="(v: string) => handleRoleChange(row, v)"
             >
               <el-option
@@ -213,7 +231,7 @@ watch(
                 @confirm="handleRemove(row)"
             >
               <template #reference>
-                <el-button link type="primary" size="small">移除</el-button>
+                <el-button link type="primary" size="small" :disabled="isLastOwner(row)">移除</el-button>
               </template>
             </el-popconfirm>
           </template>
